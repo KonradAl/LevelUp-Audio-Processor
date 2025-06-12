@@ -1,0 +1,41 @@
+
+> levelup@1.0.0 start
+> electron-forge start
+
+❯ Checking your system
+❯ Checking package manager version
+✔ Found npm@10.9.2
+✔ Checking your system
+[?25h❯ Locating application
+✔ Locating application
+❯ Loading configuration
+✔ Loading configuration
+❯ Preparing native dependencies
+✔ Preparing native dependencies
+❯ Running generateAssets hook
+✔ Running generateAssets hook
+❯ Running preStart hook
+❯ [plugin-webpack] Preparing webpack bundles
+❯ Compiling main process code
+✔ Compiling main process code
+❯ Launching dev servers for renderer process code
+<i> [ForkTsCheckerWebpackPlugin] Type-checking in progress...
+› Output Available: http://localhost:9000
+
+✔ Launching dev servers for renderer process code
+✔ [plugin-webpack] Preparing webpack bundles
+✔ Running preStart hook
+[?25h
+<i> [ForkTsCheckerWebpackPlugin] No errors found.
+App threw an error during load
+Error: Cannot find module '/Users/konradallitt/Documents/LevelUp/levelup/node_modules/@ffmpeg-installer/darwin-arm64/package.json'
+    at webpackEmptyContext (/Users/konradallitt/Documents/LevelUp/levelup/.webpack/main/index.js:11:10)
+    at ./node_modules/@ffmpeg-installer/ffmpeg/index.js (/Users/konradallitt/Documents/LevelUp/levelup/.webpack/main/index.js:68:96)
+    at __webpack_require__ (/Users/konradallitt/Documents/LevelUp/levelup/.webpack/main/index.js:7425:42)
+    at ./src/index.ts (/Users/konradallitt/Documents/LevelUp/levelup/.webpack/main/index.js:6489:34)
+    at __webpack_require__ (/Users/konradallitt/Documents/LevelUp/levelup/.webpack/main/index.js:7425:42)
+    at /Users/konradallitt/Documents/LevelUp/levelup/.webpack/main/index.js:7442:37
+    at Object.<anonymous> (/Users/konradallitt/Documents/LevelUp/levelup/.webpack/main/index.js:7445:12)
+    at Module._compile (node:internal/modules/cjs/loader:1738:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1904:10)
+    at Module.load (node:internal/modules/cjs/loader:1472:32)
