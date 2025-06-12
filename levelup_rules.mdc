@@ -1,0 +1,299 @@
+# LevelUp - Audio Normalization Utility
+# Cursor AI Rules - BULLETPROOF BUILD CONFIGURATION
+
+## PROJECT OVERVIEW
+LevelUp is a simple macOS desktop app for batch audio normalization. Clean UI, drop files, normalize to target LUFS, done.
+
+**Project Name:** LevelUp (fresh start, no confusion)
+**Core Function:** Drag files → Set LUFS target → Normalize → Done
+
+## CRITICAL BUILD RULES - FOLLOW EXACTLY
+
+### 1. USE ELECTRON FORGE ONLY
+```bash
+# MANDATORY: Start with working template
+npx create-electron-app@latest levelup --template=typescript-webpack
+cd levelup
+```
+
+**DO NOT:**
+- Mix build tools (no Vite + Webpack + manual build)
+- Create manual typescript configs
+- Try to setup React manually
+
+### 2. REACT INTEGRATION - SIMPLE APPROACH
+After Forge setup, add React:
+```bash
+npm install react react-dom @types/react @types/react-dom
+```
+
+**Webpack is already configured by Forge - don't touch it**
+
+### 3. FILE STRUCTURE - EXACTLY THIS
+```
+levelup/
+├── .cursorrules/
+│   └── levelup_rules.mdc
+├── src/
+│   ├── main.ts              # Electron main (already created by Forge)
+│   ├── preload.ts           # Preload script (already created by Forge)
+│   └── renderer.ts          # React entry point
+├── src/components/          # React components
+│   ├── App.tsx
+│   ├── DragZone.tsx
+│   ├── SettingsPanel.tsx
+│   └── ProcessingQueue.tsx
+├── src/styles/
+│   └── global.css
+└── package.json
+```
+
+### 4. PACKAGE.JSON - MINIMAL CONFIG
+Use Forge defaults. Only add:
+```json
+{
+  "dependencies": {
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "fluent-ffmpeg": "^2.1.2",
+    "@ffmpeg-installer/ffmpeg": "^1.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
+    "@types/fluent-ffmpeg": "^2.1.0"
+  }
+}
+```
+
+### 5. MAIN PROCESS - MINIMAL
+```typescript
+// src/main.ts - Keep Forge defaults, only add:
+// - Window creation
+// - File dialog IPC handlers
+// - Audio processing functions
+```
+
+### 6. PRELOAD - SECURE IPC ONLY
+```typescript
+// src/preload.ts
+import { contextBridge, ipcRenderer } from 'electron';
+
+contextBridge.exposeInMainWorld('electronAPI', {
+  selectFiles: () => ipcRenderer.invoke('select-files'),
+  processAudio: (files: any[], settings: any) => 
+    ipcRenderer.invoke('process-audio', files, settings),
+  onProgress: (callback: any) => 
+    ipcRenderer.on('progress-update', callback)
+});
+```
+
+### 7. REACT RENDERER - SIMPLE MOUNT
+```typescript
+// src/renderer.ts
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import App from './components/App';
+import './styles/global.css';
+
+const root = createRoot(document.getElementById('app')!);
+root.render(<App />);
+```
+
+## COMPONENT ARCHITECTURE
+
+### App.tsx - Main Container
+```typescript
+interface AppState {
+  files: AudioFile[];
+  settings: NormalizationSettings;
+  isProcessing: boolean;
+  progress: number;
+}
+```
+
+### DragZone.tsx - File Selection
+- Drag & drop support
+- File validation (audio formats only)
+- Visual feedback
+
+### SettingsPanel.tsx - LUFS Configuration
+- Target LUFS: -23, -16, -14 dB options
+- Output format selection
+- Simple toggles only
+
+### ProcessingQueue.tsx - Batch Processing
+- Show selected files
+- Progress per file
+- Cancel/retry options
+
+## AUDIO PROCESSING - FFmpeg Integration
+
+### Settings Interface
+```typescript
+interface NormalizationSettings {
+  targetLUFS: -23 | -16 | -14;
+  outputFormat: 'mp3' | 'wav' | 'flac';
+  preserveMetadata: boolean;
+}
+```
+
+### Processing Function
+```typescript
+// In main process only
+async function normalizeAudio(
+  inputPath: string, 
+  outputPath: string, 
+  targetLUFS: number
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    ffmpeg(inputPath)
+      .audioFilters(`loudnorm=I=${targetLUFS}:TP=-1.5:LRA=11`)
+      .output(outputPath)
+      .on('progress', (progress) => {
+        // Send progress to renderer
+      })
+      .on('end', resolve)
+      .on('error', reject)
+      .run();
+  });
+}
+```
+
+## STYLING - MINIMAL CSS
+
+### Use System Fonts and Colors
+```css
+/* src/styles/global.css */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background-color: var(--system-background);
+  color: var(--system-text);
+  margin: 0;
+  padding: 20px;
+}
+
+.drag-zone {
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  padding: 40px;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.drag-zone:hover {
+  border-color: #007AFF;
+  background-color: #f0f8ff;
+}
+```
+
+## ERROR PREVENTION RULES
+
+### 1. NO TYPESCRIPT ERRORS
+- Use `any` temporarily if types are complex
+- Fix incrementally, don't block builds
+
+### 2. NO MODULE MIXING
+- Everything uses ES modules (import/export)
+- No require() statements in renderer
+- CommonJS only in main process if needed
+
+### 3. NO MANUAL BUILD CONFIGS
+- Use Forge's webpack config as-is
+- Don't create custom tsconfig files
+- Don't modify webpack config
+
+### 4. SIMPLE ERROR HANDLING
+```typescript
+try {
+  await processAudio(file, settings);
+} catch (error) {
+  console.error('Processing failed:', error);
+  // Show user-friendly message
+}
+```
+
+## BUILD AND DISTRIBUTION
+
+### Development
+```bash
+npm start    # Run in dev mode
+```
+
+### Create App
+```bash
+npm run make    # Creates distributable .app
+```
+
+### Build Location
+App will be in: `out/LevelUp-darwin-arm64/LevelUp.app`
+
+## SUCCESS CRITERIA
+
+### MVP Must Haves
+- ✅ Launches without errors
+- ✅ Shows React UI (not blank page)
+- ✅ Drag and drop works
+- ✅ Audio processing works
+- ✅ Progress feedback works
+- ✅ Creates clickable .app file
+
+### Quality Checks
+- No console errors
+- Smooth file processing
+- Handles common audio formats
+- Clean macOS appearance
+
+## IMPLEMENTATION ORDER
+
+### Phase 1: Foundation (Steps 1-3)
+1. Create project with Electron Forge template
+2. Add React and audio dependencies
+3. Test that blank app launches successfully
+
+### Phase 2: Basic UI (Steps 4-6)
+4. Create App component with basic layout
+5. Add DragZone component with file selection
+6. Test drag and drop functionality
+
+### Phase 3: Audio Processing (Steps 7-9)  
+7. Add FFmpeg integration in main process
+8. Create IPC handlers for file processing
+9. Test single file normalization
+
+### Phase 4: Complete Features (Steps 10-12)
+10. Add SettingsPanel for LUFS selection
+11. Implement ProcessingQueue for batch jobs
+12. Add progress tracking and error handling
+
+### Phase 5: Polish (Steps 13-15)
+13. Style components with system appearance
+14. Add proper error messages and validation
+15. Build final .app and test installation
+
+## CURSOR-SPECIFIC NOTES
+
+### When Creating Components
+- Use functional components with hooks
+- Keep state simple and local
+- Use TypeScript interfaces for props
+
+### When Adding Features
+- Test each step before moving on
+- Keep main and renderer processes separate
+- Use IPC for all communication
+
+### When Debugging
+- Check browser dev tools in renderer
+- Check terminal logs for main process
+- Test with small files first
+
+## FINAL REMINDER
+
+**KEEP IT SIMPLE**
+- Don't over-engineer
+- Use Forge defaults wherever possible
+- Focus on working functionality over perfect architecture
+- Build incrementally and test frequently
+
+The goal is a working app, not a perfect codebase.
