@@ -420,8 +420,30 @@ async function performIterativeNormalization(
           console.log(`🎯 TARGET ACCURACY ACHIEVED after ${passNumber} passes!`);
           console.log(`Final accuracy: ±${accuracy.lufsError.toFixed(3)} LUFS`);
           
-          // Clean up temporary files - DISABLED FOR SAFETY (was deleting wrong files)
-          // await cleanupTempFiles(inputPath, outputPath, passNumber, intermediateFormat);
+          // If the final file has temp naming, rename it to the intended output path
+          if (tempOutputPath !== outputPath && fs.existsSync(tempOutputPath)) {
+            console.log(`🔄 Renaming final temp file to output path:`);
+            console.log(`  From: ${path.basename(tempOutputPath)}`);
+            console.log(`  To: ${path.basename(outputPath)}`);
+            
+            // Ensure output directory exists
+            const outputDir = path.dirname(outputPath);
+            if (!fs.existsSync(outputDir)) {
+              fs.mkdirSync(outputDir, { recursive: true });
+            }
+            
+            // Remove existing output file if it exists
+            if (fs.existsSync(outputPath)) {
+              fs.unlinkSync(outputPath);
+            }
+            
+            // Rename temp file to final output path
+            fs.renameSync(tempOutputPath, outputPath);
+            console.log(`✅ Successfully renamed final file to: ${path.basename(outputPath)}`);
+          }
+          
+          // Clean up remaining temporary files (now safe since final file is renamed)
+          await cleanupTempFiles(inputPath, outputPath, passNumber, intermediateFormat);
           
           mainWindow.webContents.send('progress-update', {
             filePath: inputPath,
@@ -434,6 +456,32 @@ async function performIterativeNormalization(
         // Check if we're still improving
         if (accuracy.lufsError >= lastAccuracy && passNumber > 2) {
           console.log(`⚠️  No improvement after pass ${passNumber}, stopping iteration`);
+          
+          // If the final file has temp naming, rename it to the intended output path
+          if (tempOutputPath !== outputPath && fs.existsSync(tempOutputPath)) {
+            console.log(`🔄 Renaming final temp file to output path:`);
+            console.log(`  From: ${path.basename(tempOutputPath)}`);
+            console.log(`  To: ${path.basename(outputPath)}`);
+            
+            // Ensure output directory exists
+            const outputDir = path.dirname(outputPath);
+            if (!fs.existsSync(outputDir)) {
+              fs.mkdirSync(outputDir, { recursive: true });
+            }
+            
+            // Remove existing output file if it exists
+            if (fs.existsSync(outputPath)) {
+              fs.unlinkSync(outputPath);
+            }
+            
+            // Rename temp file to final output path
+            fs.renameSync(tempOutputPath, outputPath);
+            console.log(`✅ Successfully renamed final file to: ${path.basename(outputPath)}`);
+          }
+          
+          // Clean up remaining temporary files (now safe since final file is renamed)
+          await cleanupTempFiles(inputPath, outputPath, passNumber, intermediateFormat);
+          
           break;
         }
         
@@ -456,19 +504,66 @@ async function performIterativeNormalization(
       console.log(`⚠️  Maximum passes (${maxPasses}) reached`);
       console.log(`Final accuracy: ±${lastAccuracy.toFixed(3)} LUFS (target was ±${accuracyThreshold})`);
       
-      // Clean up temporary files - DISABLED FOR SAFETY (was deleting wrong files)
-      // await cleanupTempFiles(inputPath, outputPath, passNumber - 1, intermediateFormat);
-      
-      mainWindow.webContents.send('progress-update', {
-        filePath: inputPath,
-        percent: 100
-      });
-      resolve();
+              // If the final file has temp naming, rename it to the intended output path
+        if (tempOutputPath !== outputPath && fs.existsSync(tempOutputPath)) {
+          console.log(`🔄 Renaming final temp file to output path:`);
+          console.log(`  From: ${path.basename(tempOutputPath)}`);
+          console.log(`  To: ${path.basename(outputPath)}`);
+          
+          // Ensure output directory exists
+          const outputDir = path.dirname(outputPath);
+          if (!fs.existsSync(outputDir)) {
+            fs.mkdirSync(outputDir, { recursive: true });
+          }
+          
+          // Remove existing output file if it exists
+          if (fs.existsSync(outputPath)) {
+            fs.unlinkSync(outputPath);
+          }
+          
+          // Rename temp file to final output path
+          fs.renameSync(tempOutputPath, outputPath);
+          console.log(`✅ Successfully renamed final file to: ${path.basename(outputPath)}`);
+        }
+        
+        // Clean up remaining temporary files (now safe since final file is renamed)
+        await cleanupTempFiles(inputPath, outputPath, passNumber - 1, intermediateFormat);
+        
+        mainWindow.webContents.send('progress-update', {
+          filePath: inputPath,
+          percent: 100
+        });
+        resolve();
       
     } catch (error) {
       console.error('Error in iterative normalization:', error);
-      // Clean up on error - DISABLED FOR SAFETY (was deleting wrong files)
-      // await cleanupTempFiles(inputPath, outputPath, passNumber, intermediateFormat);
+      
+      // If we have a valid temp file when error occurs, try to save it as the output
+      if (tempOutputPath !== outputPath && fs.existsSync(tempOutputPath)) {
+        try {
+          console.log(`⚠️  Error occurred, attempting to save partial result:`);
+          console.log(`  From: ${path.basename(tempOutputPath)}`);
+          console.log(`  To: ${path.basename(outputPath)}`);
+          
+          // Ensure output directory exists
+          const outputDir = path.dirname(outputPath);
+          if (!fs.existsSync(outputDir)) {
+            fs.mkdirSync(outputDir, { recursive: true });
+          }
+          
+          // Remove existing output file if it exists
+          if (fs.existsSync(outputPath)) {
+            fs.unlinkSync(outputPath);
+          }
+          
+          // Rename temp file to final output path
+          fs.renameSync(tempOutputPath, outputPath);
+          console.log(`✅ Saved partial result to: ${path.basename(outputPath)}`);
+        } catch (renameError) {
+          console.error('Failed to save partial result:', renameError);
+        }
+      }
+      
       reject(error);
     }
     })().catch(reject);
