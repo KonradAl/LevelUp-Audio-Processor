@@ -583,7 +583,11 @@ async function getAccuracyMeasurement(filePath: string, targetLUFS: number, targ
       verifyFilter += ':dual_mono=true';
     }
     
-    ffmpeg(filePath)
+    let accuracyCommand = ffmpeg(filePath);
+    if (settings?.sampleRate) {
+      accuracyCommand = applySampleRateConversion(accuracyCommand, settings);
+    }
+    accuracyCommand
       .audioFilters(verifyFilter)
       .format('null')
       .output('-')
@@ -735,6 +739,11 @@ async function performTwoPassNormalization(
     console.log(`Input: ${inputPath}`);
     console.log(`Output: ${outputPath}`);
     console.log(`Target: ${targetLUFS} LUFS, ${truePeakLimit} dBTP`);
+    if (settings.sampleRate) {
+      console.log(`Sample Rate: Converting to ${settings.sampleRate / 1000} kHz`);
+    } else {
+      console.log(`Sample Rate: Keeping original`);
+    }
     
     let stderrBuffer = ''; // Collect all stderr for better parsing
     
@@ -748,7 +757,9 @@ async function performTwoPassNormalization(
       firstPassFilter += ':dual_mono=true';
     }
     
-    ffmpeg(inputPath)
+    let analysisCommand = ffmpeg(inputPath);
+    analysisCommand = applySampleRateConversion(analysisCommand, settings);
+    analysisCommand
       .audioFilters(firstPassFilter)
       .format('null')
       .output('-')
@@ -802,7 +813,9 @@ async function performTwoPassNormalization(
         console.log('=== SECOND PASS: PROCESSING ===');
         console.log('Second pass filter:', secondPassFilter);
         
-        ffmpeg(inputPath)
+        let processingCommand = ffmpeg(inputPath);
+        processingCommand = applySampleRateConversion(processingCommand, settings);
+        processingCommand
           .audioFilters(secondPassFilter)
           .output(outputPath)
           .on('start', (commandLine) => {
@@ -870,8 +883,15 @@ async function performSinglePassNormalization(
     console.log('Input:', inputPath);
     console.log('Output:', outputPath);
     console.log('Filter:', filterString);
+    if (settings.sampleRate) {
+      console.log(`Sample Rate: Converting to ${settings.sampleRate / 1000} kHz`);
+    } else {
+      console.log(`Sample Rate: Keeping original`);
+    }
 
-    ffmpeg(inputPath)
+    let command = ffmpeg(inputPath);
+    command = applySampleRateConversion(command, settings);
+    command
       .audioFilters(filterString)
       .output(outputPath)
       .on('start', (commandLine) => {
@@ -999,6 +1019,23 @@ function buildLoudnormFilter(targetLUFS: number, peakLimit: number, settings: No
   return filterString;
 }
 
+// Apply sample rate conversion to FFmpeg command if needed
+function applySampleRateConversion(ffmpegCommand: any, settings: NormalizationSettings): any {
+  if (settings.sampleRate) {
+    console.log(`🔄 Converting sample rate to ${settings.sampleRate} Hz`);
+    
+    // Log sample rate info
+    const sampleRateKhz = settings.sampleRate / 1000;
+    console.log(`Sample rate conversion: → ${sampleRateKhz} kHz`);
+    
+    // Apply sample rate conversion before any other processing
+    return ffmpegCommand.audioFrequency(settings.sampleRate);
+  } else {
+    console.log(`📋 Keeping original sample rate`);
+    return ffmpegCommand;
+  }
+}
+
 // Verify the processed audio meets our targets
 async function verifyProcessedAudio(filePath: string, targetLUFS: number, targetTP: number, settings?: NormalizationSettings): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -1016,7 +1053,11 @@ async function verifyProcessedAudio(filePath: string, targetLUFS: number, target
       verifyFilter += ':dual_mono=true';
     }
     
-    ffmpeg(filePath)
+    let verifyCommand = ffmpeg(filePath);
+    if (settings?.sampleRate) {
+      verifyCommand = applySampleRateConversion(verifyCommand, settings);
+    }
+    verifyCommand
       .audioFilters(verifyFilter)
       .format('null')
       .output('-')

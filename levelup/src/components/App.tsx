@@ -14,6 +14,7 @@ const App: React.FC = () => {
       twoPassNormalization: true,
       outputFormat: 'mp3',
       preserveMetadata: true,
+      sampleRate: undefined, // Default to "Keep Original" sample rate
       useHighQualityMode: false,
       preserveOriginalFormat: false, // Default to false, user can enable for format preservation
       // Advanced options for maximum accuracy

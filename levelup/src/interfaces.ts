@@ -15,6 +15,8 @@ export interface NormalizationSettings {
   outputFormat: 'mp3' | 'wav' | 'flac';
   preserveMetadata: boolean;
   outputDirectory?: string;
+  // Sample rate control for uniform output
+  sampleRate?: number; // Target sample rate in Hz (44100, 48000, 96000, etc.) or undefined for "Keep Original"
   // Advanced options for precise targeting
   customLRA?: number; // Custom Loudness Range target (default: 11 LU)
   useDualMono?: boolean; // Use dual-mono processing for better accuracy (may cause issues with mono files)

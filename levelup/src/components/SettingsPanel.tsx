@@ -170,6 +170,24 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, onSettingsChang
     });
   };
 
+  const handleSampleRateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    onSettingsChange({
+      ...settings,
+      sampleRate: value === 'original' ? undefined : parseInt(value)
+    });
+  };
+
+  const getSampleRateWarning = () => {
+    if (!settings.sampleRate) return null;
+    
+    // Note: We can't detect input sample rate at this stage, so show general guidance
+    if (settings.sampleRate >= 96000) {
+      return "⚠️ High sample rates (96kHz+) create larger files. Ensure this matches your workflow needs.";
+    }
+    return null;
+  };
+
   return (
     <div className="settings-panel">
       <h3>Normalization Settings</h3>
@@ -348,6 +366,28 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, onSettingsChang
             Format selection disabled - using original file format
           </small>
         )}
+      </div>
+
+      <div className="setting-group">
+        <label htmlFor="sampleRate">Output Sample Rate:</label>
+        <select 
+          id="sampleRate" 
+          value={settings.sampleRate || 'original'} 
+          onChange={handleSampleRateChange}
+        >
+          <option value="original">Keep Original</option>
+          <option value="44100">44.1 kHz (CD Quality)</option>
+          <option value="48000">48 kHz (Professional)</option>
+          <option value="88200">88.2 kHz (High Quality)</option>
+          <option value="96000">96 kHz (Studio Quality)</option>
+          <option value="192000">192 kHz (Archival)</option>
+        </select>
+        <small className="setting-description">
+          Controls the final sample rate. Useful for standardizing output across different source files.
+          {getSampleRateWarning() && (
+            <><br /><span style={{color: '#ff9500'}}>{getSampleRateWarning()}</span></>
+          )}
+        </small>
       </div>
 
       <div className="setting-group">
